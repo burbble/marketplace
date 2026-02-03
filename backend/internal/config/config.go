@@ -53,8 +53,10 @@ func (c *RedisConfig) Addr() string {
 }
 
 type HTTPConfig struct {
-	HTTPPort string `mapstructure:"HTTP_PORT"`
-	GinMode  string `mapstructure:"GIN_MODE"`
+	HTTPPort       string `mapstructure:"HTTP_PORT"`
+	GinMode        string `mapstructure:"GIN_MODE"`
+	RateLimitRPS   int    `mapstructure:"RATE_LIMIT_RPS"`
+	RateLimitBurst int    `mapstructure:"RATE_LIMIT_BURST"`
 }
 
 type ParserConfig struct {
@@ -116,6 +118,8 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("HTTP_PORT", "8080")
 	v.SetDefault("GIN_MODE", "debug")
+	v.SetDefault("RATE_LIMIT_RPS", 100)
+	v.SetDefault("RATE_LIMIT_BURST", 200)
 
 	v.SetDefault("SCRAPE_INTERVAL", 10*time.Minute)
 	v.SetDefault("SCRAPE_WORKERS", 5)

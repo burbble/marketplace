@@ -21,6 +21,7 @@ import (
 	"github.com/burbble/marketplace/internal/repository/postgres"
 	"github.com/burbble/marketplace/internal/service"
 	"github.com/burbble/marketplace/pkg/db"
+	"github.com/burbble/marketplace/pkg/ratelimit"
 	"github.com/burbble/marketplace/pkg/zapx"
 )
 
@@ -117,7 +118,7 @@ func ProvideRedis(cfg *config.Config, lg *zap.Logger) (*redis.Client, error) {
 	return rdb, nil
 }
 
-func ProvideRouter(cfg *config.Config) *gin.Engine {
+func ProvideRouter(cfg *config.Config, rdb *redis.Client) *gin.Engine {
 	gin.SetMode(cfg.GinMode)
 
 	router := gin.New()
@@ -125,6 +126,10 @@ func ProvideRouter(cfg *config.Config) *gin.Engine {
 		gin.Recovery(),
 		gin.Logger(),
 		corsMiddleware(),
+		ratelimit.Middleware(rdb, ratelimit.Config{
+			Max:    cfg.RateLimitRPS,
+			Window: time.Second,
+		}),
 	)
 
 	router.GET("/health", func(c *gin.Context) {
