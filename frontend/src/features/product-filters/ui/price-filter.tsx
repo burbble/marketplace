@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useTranslation } from "@/shared/i18n";
 
 export function PriceFilter({
   minPrice,
@@ -13,6 +14,7 @@ export function PriceFilter({
   onMinChange: (v: string) => void;
   onMaxChange: (v: string) => void;
 }) {
+  const { t } = useTranslation();
   const minTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const maxTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -30,13 +32,13 @@ export function PriceFilter({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-zinc-400">Price (RUB)</label>
+      <label className="text-xs font-medium text-zinc-400">{t("filter.price")}</label>
       <div className="flex items-center gap-2">
         <input
           type="number"
           defaultValue={minPrice}
           onChange={handleMin}
-          placeholder="From"
+          placeholder={t("filter.priceFrom")}
           min={0}
           className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 placeholder-zinc-500 outline-none transition-colors focus:border-zinc-500"
         />
@@ -45,7 +47,7 @@ export function PriceFilter({
           type="number"
           defaultValue={maxPrice}
           onChange={handleMax}
-          placeholder="To"
+          placeholder={t("filter.priceTo")}
           min={0}
           className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 placeholder-zinc-500 outline-none transition-colors focus:border-zinc-500"
         />

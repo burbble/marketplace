@@ -10,8 +10,10 @@ import { SortSelect } from "@/features/product-sort/ui/sort-select";
 import { ProductGrid } from "@/widgets/product-catalog/ui/product-grid";
 import { Pagination } from "@/widgets/product-catalog/ui/pagination";
 import { Spinner } from "@/shared/ui/spinner";
+import { useTranslation } from "@/shared/i18n";
 
 function CatalogContent() {
+  const { t } = useTranslation();
   const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
   const [categoryId, setCategoryId] = useQueryState("category_id", parseAsString.withDefault(""));
   const [brand, setBrand] = useQueryState("brand", parseAsString.withDefault(""));
@@ -109,16 +111,24 @@ function CatalogContent() {
           onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
           className="flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-300 transition-colors hover:border-zinc-600"
         >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+            />
           </svg>
-          Filters
+          {t("catalog.filters")}
         </button>
 
         {mobileFiltersOpen && (
-          <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            {sidebar}
-          </div>
+          <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900 p-4">{sidebar}</div>
         )}
       </div>
 
@@ -135,7 +145,13 @@ function CatalogContent() {
               {loading ? (
                 <Spinner className="h-4 w-4" />
               ) : (
-                <>{total} product{total !== 1 ? "s" : ""}</>
+                <>
+                  {total === 0
+                    ? t("catalog.products_zero")
+                    : total === 1
+                      ? t("catalog.products_one")
+                      : t("catalog.products_other", { count: total })}
+                </>
               )}
             </p>
             <SortSelect
@@ -154,12 +170,7 @@ function CatalogContent() {
           ) : (
             <>
               <ProductGrid products={products} exchangeRate={exchangeRate} />
-              <Pagination
-                page={page}
-                total={total}
-                pageSize={pageSize}
-                onChange={setPage}
-              />
+              <Pagination page={page} total={total} pageSize={pageSize} onChange={setPage} />
             </>
           )}
         </div>

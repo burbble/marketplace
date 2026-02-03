@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { Category } from "@/entities/category/model";
 import { getCategories } from "@/entities/category/api";
 import { getBrands } from "@/entities/product/api";
+import { useTranslation } from "@/shared/i18n";
 import { SearchInput } from "./search-input";
 import { CategoryFilter } from "./category-filter";
 import { BrandFilter } from "./brand-filter";
@@ -34,6 +35,7 @@ export function FilterSidebar({
   onMaxPriceChange: (v: string) => void;
   onReset: () => void;
 }) {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
 
@@ -51,11 +53,7 @@ export function FilterSidebar({
   return (
     <div className="flex flex-col gap-5">
       <SearchInput value={search} onChange={onSearchChange} />
-      <CategoryFilter
-        categories={categories}
-        value={categoryId}
-        onChange={onCategoryChange}
-      />
+      <CategoryFilter categories={categories} value={categoryId} onChange={onCategoryChange} />
       <BrandFilter brands={brands} value={brand} onChange={onBrandChange} />
       <PriceFilter
         minPrice={minPrice}
@@ -68,7 +66,7 @@ export function FilterSidebar({
           onClick={onReset}
           className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-200"
         >
-          Reset filters
+          {t("filter.reset")}
         </button>
       )}
     </div>

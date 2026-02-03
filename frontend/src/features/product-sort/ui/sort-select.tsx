@@ -1,21 +1,20 @@
 "use client";
 
-const SORT_OPTIONS = [
-  { label: "Newest", value: "created_at:desc" },
-  { label: "Price: Low to High", value: "price:asc" },
-  { label: "Price: High to Low", value: "price:desc" },
-  { label: "Name: A-Z", value: "name:asc" },
-  { label: "Name: Z-A", value: "name:desc" },
-  { label: "Brand", value: "brand:asc" },
+import { useTranslation } from "@/shared/i18n";
+import type { TranslationKey } from "@/shared/i18n";
+
+const SORT_OPTIONS: { labelKey: TranslationKey; value: string }[] = [
+  { labelKey: "sort.newest", value: "created_at:desc" },
+  { labelKey: "sort.priceLow", value: "price:asc" },
+  { labelKey: "sort.priceHigh", value: "price:desc" },
+  { labelKey: "sort.nameAZ", value: "name:asc" },
+  { labelKey: "sort.nameZA", value: "name:desc" },
+  { labelKey: "sort.brand", value: "brand:asc" },
 ];
 
-export function SortSelect({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
+export function SortSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation();
+
   return (
     <select
       value={value || "created_at:desc"}
@@ -24,7 +23,7 @@ export function SortSelect({
     >
       {SORT_OPTIONS.map((opt) => (
         <option key={opt.value} value={opt.value}>
-          {opt.label}
+          {t(opt.labelKey)}
         </option>
       ))}
     </select>

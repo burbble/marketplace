@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { getExchangeRate } from "@/entities/exchange/api";
 import { Badge } from "@/shared/ui/badge";
+import { useTranslation } from "@/shared/i18n";
 
 export function ExchangeBadge() {
+  const { t } = useTranslation();
   const [rate, setRate] = useState<number | null>(null);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function ExchangeBadge() {
     return (
       <Badge variant="warning">
         <span className="h-1.5 w-1.5 rounded-full bg-current" />
-        USDT —
+        {t("exchange.unavailable")}
       </Badge>
     );
   }
@@ -40,7 +42,7 @@ export function ExchangeBadge() {
   return (
     <Badge variant="success">
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      1 USDT = {rate.toFixed(2)} RUB
+      {t("exchange.rate", { rate: rate.toFixed(2) })}
     </Badge>
   );
 }

@@ -2,7 +2,7 @@ PG_DSN ?= "host=localhost port=54320 user=postgres password=postgres dbname=stor
 MIGRATIONS_DIR = ./backend/migrations
 MOQ = $(shell which moq)
 
-.PHONY: up down rebuild rebuild-api rebuild-parser rebuild-frontend logs logs-api logs-parser logs-frontend migrate migrate-down migrate-status swagger test lint clean generate-mocks
+.PHONY: up down rebuild rebuild-api rebuild-parser rebuild-frontend logs logs-api logs-parser logs-frontend migrate migrate-down migrate-status swagger test lint clean generate-mocks test-frontend lint-frontend format-frontend
 
 up:
 	docker compose up --build -d
@@ -60,3 +60,12 @@ generate-mocks:
 	cd backend && $(MOQ) -pkg mocks -out internal/mocks/service_mock.go internal/service ProductService CategoryService
 	cd backend && $(MOQ) -pkg mocks -out internal/mocks/repository_mock.go internal/repository/postgres ProductRepository CategoryRepository
 	cd backend && $(MOQ) -pkg mocks -out internal/mocks/exchange_mock.go internal/exchange RateProvider
+
+test-frontend:
+	cd frontend && npx vitest run
+
+lint-frontend:
+	cd frontend && npx eslint src/
+
+format-frontend:
+	cd frontend && npx prettier --write src/
