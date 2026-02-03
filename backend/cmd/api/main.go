@@ -79,7 +79,9 @@ func ProvideLogger(cfg *config.Config) (*zap.Logger, error) {
 	)
 }
 
-func ProvideDB(ctx context.Context, cfg *config.Config, lg *zap.Logger) (*db.Connection, error) {
+func ProvideDB(cfg *config.Config, lg *zap.Logger) (*db.Connection, error) {
+	ctx := context.Background()
+
 	conn, err := db.NewConnection(ctx, &cfg.PostgresConfig, lg)
 	if err != nil {
 		lg.Error("failed to connect to postgres", zap.Error(err))
@@ -89,7 +91,9 @@ func ProvideDB(ctx context.Context, cfg *config.Config, lg *zap.Logger) (*db.Con
 	return conn, nil
 }
 
-func ProvideRedis(ctx context.Context, cfg *config.Config, lg *zap.Logger) (*redis.Client, error) {
+func ProvideRedis(cfg *config.Config, lg *zap.Logger) (*redis.Client, error) {
+	ctx := context.Background()
+
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr(),
 		Password: cfg.RedisPassword,

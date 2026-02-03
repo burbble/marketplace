@@ -1,4 +1,4 @@
-PG_DSN ?= "host=localhost port=5432 user=postgres password=postgres dbname=store_scraper sslmode=disable"
+PG_DSN ?= "host=localhost port=54320 user=postgres password=postgres dbname=store_scraper sslmode=disable"
 MIGRATIONS_DIR = ./migrations
 
 .PHONY: migrate migrate-down migrate-status new-migration build-api build-parser
