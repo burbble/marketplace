@@ -2,7 +2,20 @@ PG_DSN ?= "host=localhost port=54320 user=postgres password=postgres dbname=stor
 MIGRATIONS_DIR = ./backend/migrations
 MOQ = $(shell which moq)
 
-.PHONY: up down rebuild rebuild-api rebuild-parser rebuild-frontend logs logs-api logs-parser logs-frontend migrate migrate-down migrate-status swagger test lint clean generate-mocks test-frontend lint-frontend format-frontend
+.PHONY: init up down rebuild rebuild-api rebuild-parser rebuild-frontend logs logs-api logs-parser logs-frontend migrate migrate-down migrate-status swagger test lint clean generate-mocks test-frontend lint-frontend format-frontend
+
+init:
+	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example")
+	docker compose up --build -d postgres redis
+	@echo "Waiting for postgres to be ready..."
+	@until docker compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1; do sleep 1; done
+	goose -dir=$(MIGRATIONS_DIR) postgres $(PG_DSN) up -v
+	docker compose up --build -d
+	@echo ""
+	@echo "Ready!"
+	@echo "  Frontend: http://localhost:3000"
+	@echo "  API:      http://localhost:38080"
+	@echo "  Swagger:  http://localhost:38080/swagger/index.html"
 
 up:
 	docker compose up --build -d

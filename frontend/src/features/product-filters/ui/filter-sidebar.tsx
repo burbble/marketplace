@@ -41,11 +41,11 @@ export function FilterSidebar({
 
   useEffect(() => {
     getCategories()
-      .then(setCategories)
-      .catch(() => {});
+      .then((data) => setCategories(data ?? []))
+      .catch(() => setCategories([]));
     getBrands()
-      .then(setBrands)
-      .catch(() => {});
+      .then((data) => setBrands(data ?? []))
+      .catch(() => setBrands([]));
   }, []);
 
   const hasFilters = search || categoryId || brand || minPrice || maxPrice;

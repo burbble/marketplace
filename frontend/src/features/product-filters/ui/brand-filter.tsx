@@ -19,7 +19,7 @@ export function BrandFilter({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-zinc-500"
+        className="w-full rounded-lg border border-zinc-700 bg-zinc-800 py-2.5 pl-3 pr-9 text-sm text-zinc-200 outline-none transition-colors focus:border-zinc-500"
       >
         <option value="">{t("filter.allBrands")}</option>
         {brands.map((b) => (

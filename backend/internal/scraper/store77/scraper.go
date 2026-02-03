@@ -14,7 +14,7 @@ import (
 
 const (
 	baseURL         = "https://store77.net"
-	pageLoadTimeout = 30 * time.Second
+	pageLoadTimeout = 60 * time.Second
 	httpTimeout     = 15 * time.Second
 )
 
@@ -39,6 +39,9 @@ func (s *Scraper) Start() error {
 		Headless(true).
 		Set("disable-gpu").
 		Set("no-sandbox").
+		Set("disable-dev-shm-usage").
+		Set("disable-software-rasterizer").
+		Set("disable-extensions").
 		MustLaunch()
 
 	s.browser = rod.New().ControlURL(u)

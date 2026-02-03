@@ -23,5 +23,6 @@ export async function getProductById(id: string): Promise<Product> {
 }
 
 export async function getBrands(): Promise<string[]> {
-  return apiFetch<string[]>("/brands");
+  const data = await apiFetch<string[]>("/brands");
+  return data ?? [];
 }

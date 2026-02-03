@@ -19,7 +19,7 @@ export function SortSelect({ value, onChange }: { value: string; onChange: (v: s
     <select
       value={value || "created_at:desc"}
       onChange={(e) => onChange(e.target.value)}
-      className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 outline-none transition-colors focus:border-zinc-500"
+      className="rounded-lg border border-zinc-700 bg-zinc-800 py-2 pl-3 pr-9 text-sm text-zinc-200 outline-none transition-colors focus:border-zinc-500"
     >
       {SORT_OPTIONS.map((opt) => (
         <option key={opt.value} value={opt.value}>

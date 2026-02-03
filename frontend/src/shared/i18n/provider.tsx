@@ -34,7 +34,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const t = useCallback(
     (key: TranslationKey, params?: Record<string, string | number>) => {
-      let value = dictionaries[locale][key] ?? key;
+      let value: string = dictionaries[locale][key] ?? key;
       if (params) {
         for (const [k, v] of Object.entries(params)) {
           value = value.replace(`{${k}}`, String(v));
