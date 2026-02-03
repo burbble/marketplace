@@ -22,18 +22,19 @@ type Product struct {
 }
 
 type ProductFilter struct {
-	CategoryID *uuid.UUID `form:"category_id"`
-	Brand      *string    `form:"brand"`
-	MinPrice   *int       `form:"min_price"`
-	MaxPrice   *int       `form:"max_price"`
-	Search     *string    `form:"search"`
-	Page       int        `form:"page"`
-	PageSize   int        `form:"page_size"`
+	CategoryID *uuid.UUID
+	Brand      *string
+	MinPrice   *int
+	MaxPrice   *int
+	Search     *string
+	Limit      uint64
+	Offset     uint64
+	SortBy     []string
 }
 
 type ProductList struct {
 	Products []Product `json:"products"`
 	Total    int       `json:"total"`
-	Page     int       `json:"page"`
-	PageSize int       `json:"page_size"`
+	Page     uint64    `json:"page"`
+	PageSize uint64    `json:"page_size"`
 }
