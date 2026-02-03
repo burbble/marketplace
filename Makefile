@@ -1,7 +1,8 @@
 PG_DSN ?= "host=localhost port=54320 user=postgres password=postgres dbname=store_scraper sslmode=disable"
 MIGRATIONS_DIR = ./backend/migrations
+MOQ = $(shell which moq)
 
-.PHONY: up down rebuild rebuild-api rebuild-parser rebuild-frontend logs logs-api logs-parser logs-frontend migrate migrate-down migrate-status swagger test clean
+.PHONY: up down rebuild rebuild-api rebuild-parser rebuild-frontend logs logs-api logs-parser logs-frontend migrate migrate-down migrate-status swagger test lint clean generate-mocks
 
 up:
 	docker compose up --build -d
@@ -50,4 +51,12 @@ swagger:
 	cd backend && swag init -g cmd/api/main.go -o docs
 
 test:
-	cd backend && go test ./... -v -count=1
+	go test -C backend ./... -v -count=1
+
+lint:
+	cd backend && golangci-lint run ./...
+
+generate-mocks:
+	cd backend && $(MOQ) -pkg mocks -out internal/mocks/service_mock.go internal/service ProductService CategoryService
+	cd backend && $(MOQ) -pkg mocks -out internal/mocks/repository_mock.go internal/repository/postgres ProductRepository CategoryRepository
+	cd backend && $(MOQ) -pkg mocks -out internal/mocks/exchange_mock.go internal/exchange RateProvider

@@ -36,14 +36,14 @@ func (r *productRepo) Upsert(ctx context.Context, products []domain.Product) err
 		Insert("products").
 		Columns(
 			"external_id", "sku", "name", "original_price", "price",
-			"image_url", "product_url", "brand", "category_id", "updated_at",
+			"image_url", "product_url", "brand", "description", "category_id", "updated_at",
 		)
 
 	now := time.Now()
 	for _, p := range products {
 		q = q.Values(
 			p.ExternalID, p.SKU, p.Name, p.OriginalPrice, p.Price,
-			p.ImageURL, p.ProductURL, p.Brand, p.CategoryID, now,
+			p.ImageURL, p.ProductURL, p.Brand, p.Description, p.CategoryID, now,
 		)
 	}
 
@@ -55,6 +55,7 @@ func (r *productRepo) Upsert(ctx context.Context, products []domain.Product) err
 		image_url = EXCLUDED.image_url,
 		product_url = EXCLUDED.product_url,
 		brand = EXCLUDED.brand,
+		description = EXCLUDED.description,
 		category_id = EXCLUDED.category_id,
 		updated_at = EXCLUDED.updated_at`)
 
@@ -75,7 +76,7 @@ func (r *productRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Produc
 	query, args, err := r.conn.Builder.
 		Select(
 			"id", "external_id", "sku", "name", "original_price", "price",
-			"image_url", "product_url", "brand", "category_id", "created_at", "updated_at",
+			"image_url", "product_url", "brand", "description", "category_id", "created_at", "updated_at",
 		).
 		From("products").
 		Where("id = ?", id).
@@ -112,7 +113,7 @@ func (r *productRepo) GetByFilter(ctx context.Context, filter domain.ProductFilt
 	q := r.conn.Builder.
 		Select(
 			"id", "external_id", "sku", "name", "original_price", "price",
-			"image_url", "product_url", "brand", "category_id", "created_at", "updated_at",
+			"image_url", "product_url", "brand", "description", "category_id", "created_at", "updated_at",
 		).
 		From("products").
 		Where(where).

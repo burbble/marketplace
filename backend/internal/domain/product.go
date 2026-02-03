@@ -16,6 +16,7 @@ type Product struct {
 	ImageURL      string    `db:"image_url" json:"image_url"`
 	ProductURL    string    `db:"product_url" json:"product_url"`
 	Brand         string    `db:"brand" json:"brand"`
+	Description   string    `db:"description" json:"description"`
 	CategoryID    uuid.UUID `db:"category_id" json:"category_id"`
 	CreatedAt     time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`

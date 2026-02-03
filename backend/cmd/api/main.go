@@ -225,7 +225,7 @@ func StartServer(
 				return err
 			}
 
-			rdb.Close()
+			_ = rdb.Close()
 			conn.Close()
 
 			lg.Info("server stopped")

@@ -17,14 +17,15 @@ type Category struct {
 }
 
 type Product struct {
-	ExternalID string
-	SKU        string
-	Name       string
-	Price      int
-	ImageURL   string
-	ProductURL string
-	Brand      string
-	Category   string
+	ExternalID  string
+	SKU         string
+	Name        string
+	Price       int
+	ImageURL    string
+	ProductURL  string
+	Brand       string
+	Category    string
+	Description string
 }
 
 type PaginationInfo struct {
@@ -216,6 +217,34 @@ func ParseTotalProducts(html string) (int, error) {
 	}
 
 	return n, nil
+}
+
+func ParseProductDescription(html string) string {
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		return ""
+	}
+
+	selectors := []string{
+		"div.detail_text",
+		"div#detail_text",
+		"div[itemprop='description']",
+		"div.product-detail-text",
+		"div.product_description",
+		"div.element-detail-text",
+	}
+
+	for _, sel := range selectors {
+		el := doc.Find(sel).First()
+		if el.Length() > 0 {
+			text := strings.TrimSpace(el.Text())
+			if text != "" {
+				return normalizeSpace(text)
+			}
+		}
+	}
+
+	return ""
 }
 
 func parsePrice(s string) int {

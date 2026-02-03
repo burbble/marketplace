@@ -78,7 +78,7 @@ func (g *grinexProvider) fetchRate(ctx context.Context) (float64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("fetch grinex depth: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("grinex returned status %d", resp.StatusCode)

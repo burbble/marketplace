@@ -1,3 +1,19 @@
+// Parser is a periodic scraper that fetches product data from store77.net
+// and upserts it into the database.
+//
+// Possible improvements:
+//   - Rotate requests through a proxy pool (e.g. SOCKS5 / HTTP proxies) to avoid
+//     IP-based rate limiting and reduce the risk of being blocked.
+//   - Scale horizontally by splitting category ranges across multiple parser
+//     instances (e.g. via Redis-based task queue or message broker).
+//   - Use a shared rate limiter (e.g. golang.org/x/time/rate) instead of a fixed
+//     sleep between requests for more precise throughput control.
+//   - Cache fetched product descriptions in Redis to skip re-fetching on
+//     subsequent scrape cycles when the product URL hasn't changed.
+//   - Add retry logic with exponential backoff for transient HTTP errors
+//     instead of skipping failed pages entirely.
+//   - Emit Prometheus metrics (scrape duration, success/failure counts,
+//     products upserted) for monitoring and alerting.
 package main
 
 import (
@@ -74,7 +90,7 @@ func run() exitCode {
 		Password: cfg.RedisPassword,
 		DB:       cfg.RedisDB,
 	})
-	defer rdb.Close()
+	defer func() { _ = rdb.Close() }()
 
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		lg.Error("failed to connect to redis", zap.Error(err))
@@ -183,11 +199,11 @@ func (a *application) scrape(ctx context.Context) error {
 			continue
 		}
 
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			break
-		case sem <- struct{}{}:
 		}
+
+		sem <- struct{}{}
 
 		wg.Add(1)
 		go func(cat store77.Category, categoryID uuid.UUID) {
@@ -272,10 +288,16 @@ func (a *application) processPage(ctx context.Context, html string, categoryID u
 	}
 
 	products := make([]domain.Product, 0, len(parsed))
-	for _, p := range parsed {
+	for i, p := range parsed {
 		if p.ExternalID == "" {
 			continue
 		}
+
+		if i > 0 {
+			time.Sleep(500 * time.Millisecond)
+		}
+
+		description := a.fetchProductDescription(ctx, p.ProductURL)
 
 		price := p.Price - 1000
 		if price < 0 {
@@ -291,6 +313,7 @@ func (a *application) processPage(ctx context.Context, html string, categoryID u
 			ImageURL:      p.ImageURL,
 			ProductURL:    p.ProductURL,
 			Brand:         p.Brand,
+			Description:   description,
 			CategoryID:    categoryID,
 		})
 	}
@@ -302,4 +325,21 @@ func (a *application) processPage(ctx context.Context, html string, categoryID u
 	a.logger.Info("upserting products", zap.Int("count", len(products)))
 
 	return a.productRepo.Upsert(ctx, products)
+}
+
+func (a *application) fetchProductDescription(ctx context.Context, productURL string) string {
+	if productURL == "" {
+		return ""
+	}
+
+	html, err := a.scraper.FetchProductPage(ctx, productURL)
+	if err != nil {
+		a.logger.Warn("failed to fetch product page for description",
+			zap.String("url", productURL),
+			zap.Error(err),
+		)
+		return ""
+	}
+
+	return store77.ParseProductDescription(html)
 }

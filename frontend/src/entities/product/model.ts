@@ -8,6 +8,7 @@ export interface Product {
   image_url: string;
   product_url: string;
   brand: string;
+  description: string;
   category_id: string;
   created_at: string;
   updated_at: string;

@@ -126,6 +126,15 @@ export default function ProductPage({
             )}
           </div>
 
+          {product.description && (
+            <div className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+              <h2 className="text-sm font-medium text-zinc-400">Описание</h2>
+              <p className="text-sm leading-relaxed text-zinc-300 whitespace-pre-line">
+                {product.description}
+              </p>
+            </div>
+          )}
+
           <div className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-6">
             <h2 className="text-sm font-medium text-zinc-400">Details</h2>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
