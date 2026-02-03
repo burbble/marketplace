@@ -89,3 +89,21 @@ func (s *Scraper) FetchMainPage(ctx context.Context) (string, error) {
 
 	return html, nil
 }
+
+func (s *Scraper) FetchCategoryPage(ctx context.Context, path string, page int) (string, error) {
+	u := baseURL + path
+	if page > 1 {
+		u += fmt.Sprintf("?PAGEN_1=%d", page)
+	}
+
+	s.logger.Info("fetching category page", zap.String("url", u), zap.Int("page", page))
+
+	html, err := s.FetchPageHTML(ctx, u)
+	if err != nil {
+		return "", err
+	}
+
+	s.logger.Info("category page fetched", zap.Int("html_length", len(html)))
+
+	return html, nil
+}

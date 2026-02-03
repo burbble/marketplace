@@ -8,10 +8,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
 	"github.com/burbble/marketplace/internal/config"
+	"github.com/burbble/marketplace/internal/domain"
+	"github.com/burbble/marketplace/internal/repository/postgres"
+	"github.com/burbble/marketplace/internal/scraper/store77"
 	"github.com/burbble/marketplace/pkg/db"
 	"github.com/burbble/marketplace/pkg/zapx"
 )
@@ -28,10 +32,13 @@ const (
 )
 
 type application struct {
-	logger *zap.Logger
-	cfg    *config.Config
-	conn   *db.Connection
-	rdb    *redis.Client
+	logger       *zap.Logger
+	cfg          *config.Config
+	conn         *db.Connection
+	rdb          *redis.Client
+	scraper      *store77.Scraper
+	categoryRepo postgres.CategoryRepository
+	productRepo  postgres.ProductRepository
 }
 
 func main() {
@@ -76,10 +83,13 @@ func run() exitCode {
 	lg.Info("redis connected", zap.String("addr", cfg.Addr()))
 
 	app := &application{
-		logger: lg,
-		cfg:    cfg,
-		conn:   conn,
-		rdb:    rdb,
+		logger:       lg,
+		cfg:          cfg,
+		conn:         conn,
+		rdb:          rdb,
+		scraper:      store77.NewScraper(lg),
+		categoryRepo: postgres.NewCategoryRepo(conn),
+		productRepo:  postgres.NewProductRepo(conn),
 	}
 
 	return app.runScraper(ctx)
@@ -111,7 +121,163 @@ func (a *application) runScraper(ctx context.Context) exitCode {
 func (a *application) scrape(ctx context.Context) error {
 	a.logger.Info("scraping started")
 
+	if err := a.scraper.Start(); err != nil {
+		return fmt.Errorf("start browser: %w", err)
+	}
+	defer a.scraper.Stop()
+
+	mainHTML, err := a.scraper.FetchMainPage(ctx)
+	if err != nil {
+		return fmt.Errorf("fetch main page: %w", err)
+	}
+
+	parsedCategories, err := store77.ParseCategories(mainHTML)
+	if err != nil {
+		return fmt.Errorf("parse categories: %w", err)
+	}
+
+	a.logger.Info("categories parsed", zap.Int("count", len(parsedCategories)))
+
+	domainCategories := make([]domain.Category, len(parsedCategories))
+	for i, c := range parsedCategories {
+		domainCategories[i] = domain.Category{
+			Name: c.Name,
+			Slug: c.Slug,
+			URL:  c.URL,
+		}
+	}
+
+	if err := a.categoryRepo.Upsert(ctx, domainCategories); err != nil {
+		return fmt.Errorf("upsert categories: %w", err)
+	}
+
+	dbCategories, err := a.categoryRepo.GetAll(ctx)
+	if err != nil {
+		return fmt.Errorf("get categories: %w", err)
+	}
+
+	slugToID := make(map[string]uuid.UUID, len(dbCategories))
+	for _, c := range dbCategories {
+		slugToID[c.Slug] = c.ID
+	}
+
+	for _, cat := range parsedCategories {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		categoryID, ok := slugToID[cat.Slug]
+		if !ok {
+			a.logger.Warn("category not found in DB", zap.String("slug", cat.Slug))
+			continue
+		}
+
+		if err := a.scrapeCategory(ctx, cat, categoryID); err != nil {
+			a.logger.Error("scrape category failed",
+				zap.String("category", cat.Name),
+				zap.Error(err),
+			)
+			continue
+		}
+	}
+
 	a.logger.Info("scraping completed")
+	return nil
+}
+
+func (a *application) scrapeCategory(ctx context.Context, cat store77.Category, categoryID uuid.UUID) error {
+	a.logger.Info("scraping category", zap.String("name", cat.Name), zap.String("url", cat.URL))
+
+	html, err := a.scraper.FetchCategoryPage(ctx, cat.URL, 1)
+	if err != nil {
+		return fmt.Errorf("fetch page 1: %w", err)
+	}
+
+	pagination, err := store77.ParsePagination(html)
+	if err != nil {
+		return fmt.Errorf("parse pagination: %w", err)
+	}
+
+	a.logger.Info("category pagination",
+		zap.String("category", cat.Name),
+		zap.Int("total_pages", pagination.TotalPages),
+	)
+
+	if err := a.processPage(ctx, html, categoryID); err != nil {
+		return fmt.Errorf("process page 1: %w", err)
+	}
+
+	for page := 2; page <= pagination.TotalPages; page++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		pageHTML, err := a.scraper.FetchCategoryPage(ctx, cat.URL, page)
+		if err != nil {
+			a.logger.Error("fetch page failed",
+				zap.String("category", cat.Name),
+				zap.Int("page", page),
+				zap.Error(err),
+			)
+			continue
+		}
+
+		if err := a.processPage(ctx, pageHTML, categoryID); err != nil {
+			a.logger.Error("process page failed",
+				zap.String("category", cat.Name),
+				zap.Int("page", page),
+				zap.Error(err),
+			)
+			continue
+		}
+	}
 
 	return nil
+}
+
+func (a *application) processPage(ctx context.Context, html string, categoryID uuid.UUID) error {
+	parsed, err := store77.ParseProducts(html)
+	if err != nil {
+		return fmt.Errorf("parse products: %w", err)
+	}
+
+	if len(parsed) == 0 {
+		return nil
+	}
+
+	products := make([]domain.Product, 0, len(parsed))
+	for _, p := range parsed {
+		if p.ExternalID == "" {
+			continue
+		}
+
+		price := p.Price - 1000
+		if price < 0 {
+			price = 0
+		}
+
+		products = append(products, domain.Product{
+			ExternalID:    p.ExternalID,
+			SKU:           p.SKU,
+			Name:          p.Name,
+			OriginalPrice: p.Price,
+			Price:         price,
+			ImageURL:      p.ImageURL,
+			ProductURL:    p.ProductURL,
+			Brand:         p.Brand,
+			CategoryID:    categoryID,
+		})
+	}
+
+	if len(products) == 0 {
+		return nil
+	}
+
+	a.logger.Info("upserting products", zap.Int("count", len(products)))
+
+	return a.productRepo.Upsert(ctx, products)
 }
