@@ -20,6 +20,12 @@ func NewExchangeHandler(provider exchange.RateProvider) *ExchangeHandler {
 	return &ExchangeHandler{provider: provider}
 }
 
+// @Summary      Get USDT/RUB exchange rate
+// @Tags         exchange
+// @Produce      json
+// @Success      200  {object}  rateResponse
+// @Failure      500  {object}  ErrorResponse
+// @Router       /exchange/rate [get]
 func (h *ExchangeHandler) GetRate(c *gin.Context) {
 	rate, err := h.provider.GetUSDTRate(c.Request.Context())
 	if err != nil {

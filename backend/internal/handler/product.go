@@ -40,6 +40,21 @@ func NewProductHandler(svc service.ProductService) *ProductHandler {
 	return &ProductHandler{svc: svc}
 }
 
+// @Summary      List products
+// @Tags         products
+// @Produce      json
+// @Param        page         query     int     false  "Page number"               default(1)
+// @Param        page_size    query     int     false  "Page size"                 default(24)
+// @Param        sort_fields  query     string  false  "Sort (e.g. price:asc,name:desc)"
+// @Param        category_id  query     string  false  "Category UUID"
+// @Param        brand        query     string  false  "Brand filter"
+// @Param        min_price    query     int     false  "Min price (RUB)"
+// @Param        max_price    query     int     false  "Max price (RUB)"
+// @Param        search       query     string  false  "Search by name"
+// @Success      200  {object}  domain.ProductList
+// @Failure      400  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Router       /products [get]
 func (h *ProductHandler) List(c *gin.Context) {
 	var q productListQuery
 	if err := c.ShouldBindQuery(&q); err != nil {
@@ -103,6 +118,15 @@ func (h *ProductHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// @Summary      Get product by ID
+// @Tags         products
+// @Produce      json
+// @Param        id   path      string  true  "Product UUID"
+// @Success      200  {object}  domain.Product
+// @Failure      400  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Router       /products/{id} [get]
 func (h *ProductHandler) GetByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -123,6 +147,12 @@ func (h *ProductHandler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, product)
 }
 
+// @Summary      List all brands
+// @Tags         products
+// @Produce      json
+// @Success      200  {array}   string
+// @Failure      500  {object}  ErrorResponse
+// @Router       /brands [get]
 func (h *ProductHandler) GetBrands(c *gin.Context) {
 	brands, err := h.svc.GetBrands(c.Request.Context())
 	if err != nil {

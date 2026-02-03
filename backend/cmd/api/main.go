@@ -9,9 +9,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	_ "github.com/burbble/marketplace/docs"
 	"github.com/burbble/marketplace/internal/config"
 	"github.com/burbble/marketplace/internal/exchange"
 	"github.com/burbble/marketplace/internal/handler"
@@ -34,6 +37,10 @@ var (
 	env       = config.EnvDev
 )
 
+// @title          Store Marketplace API
+// @version        1.0
+// @description    Product catalog API for store77.net marketplace
+// @BasePath       /api/v1
 func main() {
 	fx.New(
 		fx.Provide(
@@ -123,6 +130,8 @@ func ProvideRouter(cfg *config.Config) *gin.Engine {
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return router
 }

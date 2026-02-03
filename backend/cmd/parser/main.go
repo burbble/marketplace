@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -138,13 +139,18 @@ func (a *application) scrape(ctx context.Context) error {
 
 	a.logger.Info("categories parsed", zap.Int("count", len(parsedCategories)))
 
-	domainCategories := make([]domain.Category, len(parsedCategories))
-	for i, c := range parsedCategories {
-		domainCategories[i] = domain.Category{
+	seen := make(map[string]struct{}, len(parsedCategories))
+	domainCategories := make([]domain.Category, 0, len(parsedCategories))
+	for _, c := range parsedCategories {
+		if _, exists := seen[c.Slug]; exists {
+			continue
+		}
+		seen[c.Slug] = struct{}{}
+		domainCategories = append(domainCategories, domain.Category{
 			Name: c.Name,
 			Slug: c.Slug,
 			URL:  c.URL,
-		}
+		})
 	}
 
 	if err := a.categoryRepo.Upsert(ctx, domainCategories); err != nil {
@@ -161,27 +167,43 @@ func (a *application) scrape(ctx context.Context) error {
 		slugToID[c.Slug] = c.ID
 	}
 
-	for _, cat := range parsedCategories {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
+	workers := a.cfg.ScrapeWorkers
+	if workers <= 0 {
+		workers = 5
+	}
 
+	sem := make(chan struct{}, workers)
+	var wg sync.WaitGroup
+
+	a.logger.Info("scraping categories", zap.Int("concurrency", workers), zap.Int("total", len(parsedCategories)))
+
+	for _, cat := range parsedCategories {
 		categoryID, ok := slugToID[cat.Slug]
 		if !ok {
-			a.logger.Warn("category not found in DB", zap.String("slug", cat.Slug))
 			continue
 		}
 
-		if err := a.scrapeCategory(ctx, cat, categoryID); err != nil {
-			a.logger.Error("scrape category failed",
-				zap.String("category", cat.Name),
-				zap.Error(err),
-			)
-			continue
+		select {
+		case <-ctx.Done():
+			break
+		case sem <- struct{}{}:
 		}
+
+		wg.Add(1)
+		go func(cat store77.Category, categoryID uuid.UUID) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			if err := a.scrapeCategory(ctx, cat, categoryID); err != nil {
+				a.logger.Error("scrape category failed",
+					zap.String("category", cat.Name),
+					zap.Error(err),
+				)
+			}
+		}(cat, categoryID)
 	}
+
+	wg.Wait()
 
 	a.logger.Info("scraping completed")
 	return nil

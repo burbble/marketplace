@@ -15,11 +15,11 @@ const (
 )
 
 type Config struct {
-	BaseConfig
-	PostgresConfig
-	RedisConfig
-	HTTPConfig
-	ParserConfig
+	BaseConfig     `mapstructure:",squash"`
+	PostgresConfig `mapstructure:",squash"`
+	RedisConfig    `mapstructure:",squash"`
+	HTTPConfig     `mapstructure:",squash"`
+	ParserConfig   `mapstructure:",squash"`
 }
 
 type BaseConfig struct {
@@ -59,6 +59,7 @@ type HTTPConfig struct {
 
 type ParserConfig struct {
 	ScrapeInterval time.Duration `mapstructure:"SCRAPE_INTERVAL"`
+	ScrapeWorkers  int           `mapstructure:"SCRAPE_WORKERS"`
 }
 
 func LoadFromFlags(cfg *Config) error {
@@ -117,6 +118,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("GIN_MODE", "debug")
 
 	v.SetDefault("SCRAPE_INTERVAL", 10*time.Minute)
+	v.SetDefault("SCRAPE_WORKERS", 5)
 }
 
 func (c *BaseConfig) IsDevEnv() bool {
