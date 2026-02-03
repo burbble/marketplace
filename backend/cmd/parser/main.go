@@ -13,6 +13,7 @@ import (
 
 	"github.com/burbble/marketplace/internal/config"
 	"github.com/burbble/marketplace/pkg/db"
+	"github.com/burbble/marketplace/pkg/zapx"
 )
 
 type exitCode = int
@@ -47,21 +48,11 @@ func run() exitCode {
 		return errLoadConfig
 	}
 
-	var lg *zap.Logger
-	var err error
-
-	if cfg.IsDevEnv() {
-		lg, err = zap.NewDevelopment()
-	} else {
-		lg, err = zap.NewProduction()
-	}
-
+	lg, err := zapx.Init(cfg.LogMode, zap.String("service", "parser"))
 	if err != nil {
 		fmt.Printf("failed to init logger: %v\n", err)
 		return errInitLogger
 	}
-
-	lg = lg.With(zap.String("service", "parser"))
 
 	conn, err := db.NewConnection(ctx, &cfg.PostgresConfig, lg)
 	if err != nil {

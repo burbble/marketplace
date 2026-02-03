@@ -24,7 +24,7 @@ type Config struct {
 
 type BaseConfig struct {
 	Environment string
-	LogLevel    string `mapstructure:"LOG_LEVEL"`
+	LogMode     string `mapstructure:"LOG_MODE"`
 }
 
 type PostgresConfig struct {
@@ -100,7 +100,7 @@ func Load(cfg *Config, envFile string) error {
 }
 
 func setDefaults(v *viper.Viper) {
-	v.SetDefault("LOG_LEVEL", "info")
+	v.SetDefault("LOG_MODE", "dev")
 
 	v.SetDefault("PG_HOST", "localhost")
 	v.SetDefault("PG_PORT", "5432")

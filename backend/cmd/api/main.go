@@ -14,6 +14,7 @@ import (
 
 	"github.com/burbble/marketplace/internal/config"
 	"github.com/burbble/marketplace/pkg/db"
+	"github.com/burbble/marketplace/pkg/zapx"
 )
 
 const (
@@ -59,27 +60,11 @@ func ProvideConfig() (*config.Config, error) {
 }
 
 func ProvideLogger(cfg *config.Config) (*zap.Logger, error) {
-	var lg *zap.Logger
-	var err error
-
-	if cfg.IsDevEnv() {
-		lg, err = zap.NewDevelopment()
-	} else {
-		lg, err = zap.NewProduction()
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("init logger: %w", err)
-	}
-
-	lg = lg.With(
+	return zapx.Init(cfg.LogMode,
+		zap.String("service", "api"),
 		zap.String("version", version),
 		zap.String("env", env),
 	)
-
-	_ = zap.ReplaceGlobals(lg)
-
-	return lg, nil
 }
 
 func ProvideDB(ctx context.Context, cfg *config.Config, lg *zap.Logger) (*db.Connection, error) {
