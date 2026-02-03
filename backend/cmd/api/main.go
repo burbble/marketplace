@@ -13,6 +13,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/burbble/marketplace/internal/config"
+	"github.com/burbble/marketplace/internal/exchange"
+	"github.com/burbble/marketplace/internal/handler"
+	"github.com/burbble/marketplace/internal/repository/postgres"
+	"github.com/burbble/marketplace/internal/service"
 	"github.com/burbble/marketplace/pkg/db"
 	"github.com/burbble/marketplace/pkg/zapx"
 )
@@ -39,6 +43,14 @@ func main() {
 			ProvideRedis,
 			ProvideRouter,
 			ProvideHTTPServer,
+			postgres.NewCategoryRepo,
+			postgres.NewProductRepo,
+			service.NewCategoryService,
+			service.NewProductService,
+			exchange.NewGrinexProvider,
+			handler.NewCategoryHandler,
+			handler.NewProductHandler,
+			handler.NewExchangeHandler,
 		),
 		fx.Invoke(SetupRoutes),
 		fx.Invoke(StartServer),
@@ -101,6 +113,7 @@ func ProvideRouter(cfg *config.Config) *gin.Engine {
 	router.Use(
 		gin.Recovery(),
 		gin.Logger(),
+		corsMiddleware(),
 	)
 
 	router.GET("/health", func(c *gin.Context) {
@@ -121,16 +134,40 @@ func ProvideHTTPServer(cfg *config.Config, router *gin.Engine) *http.Server {
 	}
 }
 
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept")
+		c.Header("Access-Control-Max-Age", "43200")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func SetupRoutes(
-	cfg *config.Config,
 	router *gin.Engine,
 	lg *zap.Logger,
+	ch *handler.CategoryHandler,
+	ph *handler.ProductHandler,
+	eh *handler.ExchangeHandler,
 ) {
 	apiV1 := router.Group("/api/v1")
 
-	apiV1.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok", "version": version})
-	})
+	apiV1.GET("/categories", ch.List)
+	apiV1.GET("/categories/:id", ch.GetByID)
+
+	apiV1.GET("/products", ph.List)
+	apiV1.GET("/products/:id", ph.GetByID)
+
+	apiV1.GET("/brands", ph.GetBrands)
+
+	apiV1.GET("/exchange/rate", eh.GetRate)
 
 	lg.Info("routes registered")
 }
