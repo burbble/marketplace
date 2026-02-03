@@ -130,7 +130,7 @@ func (r *productRepo) GetByFilter(ctx context.Context, filter domain.ProductFilt
 		return nil, fmt.Errorf("build select products: %w", err)
 	}
 
-	var products []domain.Product
+	products := make([]domain.Product, 0)
 	if err := r.conn.DB.SelectContext(ctx, &products, dataQ, dataArgs...); err != nil {
 		return nil, fmt.Errorf("select products: %w", err)
 	}

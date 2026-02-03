@@ -14,7 +14,8 @@ export async function getProducts(filter: ProductFilter): Promise<ProductList> {
   if (filter.search) params.set("search", filter.search);
 
   const qs = params.toString();
-  return apiFetch<ProductList>(`/products${qs ? `?${qs}` : ""}`);
+  const data = await apiFetch<ProductList>(`/products${qs ? `?${qs}` : ""}`);
+  return { ...data, products: data.products ?? [] };
 }
 
 export async function getProductById(id: string): Promise<Product> {

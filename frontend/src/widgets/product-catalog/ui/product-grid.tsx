@@ -10,7 +10,7 @@ export function ProductGrid({
   products: Product[];
   exchangeRate: number;
 }) {
-  if (products.length === 0) {
+  if (!products || products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
         <svg

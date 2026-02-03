@@ -1,10 +1,7 @@
 services:
   postgres:
     image: postgres:17-alpine
-    environment:
-      POSTGRES_DB: store_scraper
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    env_file: .env
     ports:
       - "54320:5432"
     volumes:
@@ -31,17 +28,7 @@ services:
       target: api
     ports:
       - "38080:8080"
-    environment:
-      PG_HOST: postgres
-      PG_PORT: "5432"
-      PG_USER: postgres
-      PG_PASSWORD: postgres
-      PG_DB_NAME: store_scraper
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      HTTP_PORT: "8080"
-      RATE_LIMIT_RPS: "100"
-      LOG_MODE: dev
+    env_file: .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,17 +40,7 @@ services:
       context: ./backend
       target: parser
     shm_size: "2gb"
-    environment:
-      PG_HOST: postgres
-      PG_PORT: "5432"
-      PG_USER: postgres
-      PG_PASSWORD: postgres
-      PG_DB_NAME: store_scraper
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      SCRAPE_INTERVAL: 10m
-      SCRAPE_WORKERS: "5"
-      LOG_MODE: dev
+    env_file: .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,7 +51,7 @@ services:
     build:
       context: ./frontend
       args:
-        BACKEND_URL: http://api:8080
+        BACKEND_URL: ${BACKEND_URL}
     ports:
       - "3000:3000"
     depends_on:

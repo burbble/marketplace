@@ -133,7 +133,12 @@ func ProvideRouter(cfg *config.Config, rdb *redis.Client) *gin.Engine {
 	)
 
 	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		c.JSON(http.StatusOK, gin.H{
+			"status":     "ok",
+			"version":    version,
+			"commit":     commit,
+			"build_date": buildDate,
+		})
 	})
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
